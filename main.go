@@ -53,13 +53,14 @@ func main() {
 		log.Fatal(err)
 	}
 	schemaLoader := gojsonschema.NewStringLoader(string(schema))
-	html, err := ioutil.ReadFile("index.html")
+
+	index, err := ioutil.ReadFile("index.html")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, string(html))
+		fmt.Fprint(w, string(index))
 	})
 
 	http.HandleFunc("/validate", func(w http.ResponseWriter, r *http.Request) {

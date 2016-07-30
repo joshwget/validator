@@ -9,35 +9,50 @@
 
   <script>
 $(document).ready(function(){
-    $('#ff').submit(function(e) {
-        e.preventDefault();
-        $.ajax({
-            url: 'validate',
-            data: $(this).serialize(),
-            success: function(data) {
-                $('#response').html(data);
-            }
-        });
+  $('#valid').hide();
+  $('#invalid').hide();
+  $('#ff').submit(function(e) {
+    e.preventDefault();
+    $.ajax({
+      url: 'validate',
+      data: $(this).serialize(),
+      success: function(data) {
+        if(data == 'Valid!') {
+          $('#invalid').hide()
+          $('#valid').show()
+        } else {
+          $('#invalid').html(data);
+          $('#valid').hide()
+          $('#invalid').show()
+        }
+      }
     });
+  });
 });
   </script>
 
 </head>
 <body>
-  <form action="validate" method="POST" id="ff">
-    <fieldset class="form-group">
-      <textarea class="form-control" name="cc" rows="10">hostname: josh
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h1>RancherOS cloud-config validator</h1>
+      <form action="validate" method="POST" id="ff">
+        <fieldset class="form-group">
+          <textarea class="form-control" name="cc" rows="10">#cloud-config
+hostname: rancher
 rancher:
   log: true
   docker:
     args: [-g, overlay]</textarea>
-    </fieldset>
-    <button type="submit" class="btn btn-primary">Submit</button>
-  </form>
-  <div class="alert alert-danger" role="alert">
-    <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-    <span class="sr-only">Error:</span>
-    <div id="response"></div>
+        </fieldset>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+      <div id="valid"class="alert alert-success" role="alert">
+        Valid!
+      </div>
+      <div id="invalid" class="alert alert-danger" role="alert">
+      </div>
+    </div>
   </div>
 </body>
 </html>
