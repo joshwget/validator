@@ -6,18 +6,40 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/docker/libcompose/config"
+	//"github.com/docker/libcompose/utils"
 	"github.com/xeipuuv/gojsonschema"
 	"gopkg.in/yaml.v2"
 )
 
-func convertServiceKeysToStrings(service map[string]interface{}) map[string]interface{} {
-	newService := make(map[string]interface{})
+func convertMapKeysToStrings(existingMap map[string]interface{}) map[string]interface{} {
+	newMap := make(map[string]interface{})
 
-	for k, v := range service {
-		newService[k] = convertKeysToStrings(v)
+	for k, v := range existingMap {
+		newMap[k] = convertKeysToStrings(v)
 	}
 
-	return newService
+	return newMap
+}
+
+func convertServiceMapKeysToStrings(serviceMap config.RawServiceMap) config.RawServiceMap {
+        newServiceMap := make(config.RawServiceMap)
+
+        for k, v := range serviceMap {
+                newServiceMap[k] = convertServiceKeysToStrings(v)
+        }
+
+        return newServiceMap
+}
+
+func convertServiceKeysToStrings(service config.RawService) config.RawService {
+        newService := make(config.RawService)
+
+        for k, v := range service {
+                newService[k] = convertKeysToStrings(v)
+        }
+
+        return newService
 }
 
 func convertKeysToStrings(item interface{}) interface{} {
@@ -59,8 +81,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	compose, err := ioutil.ReadFile("compose.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, string(index))
+	})
+
+	http.HandleFunc("/compose", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, string(compose))
 	})
 
 	http.HandleFunc("/validate", func(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +122,27 @@ func main() {
 				fmt.Fprintf(w, "%s<br>", desc)
 			}
 		}
+	})
+
+	http.HandleFunc("/compose-validate", func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			fmt.Fprint(w, err)
+			return
+		}
+		cloudConfig := r.FormValue("cc")
+
+		var data config.RawServiceMap
+		if err := yaml.Unmarshal([]byte(cloudConfig), &data); err != nil {
+			fmt.Fprint(w, err)
+			return
+		}
+		data = convertServiceMapKeysToStrings(data)
+
+                if err := config.Validate(data); err == nil {
+			fmt.Fprint(w, "Valid!")
+                } else {
+			fmt.Fprint(w, err)
+                }
 	})
 
 	log.Fatal(http.ListenAndServe(":9000", nil))
