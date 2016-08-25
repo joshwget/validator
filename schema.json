@@ -4,7 +4,10 @@
 
   "properties": {
     "ssh_authorized_keys": {"$ref": "#/definitions/list_of_strings"},
-    "write_files": {"type": "array"},
+    "write_files": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/file_config"}
+    },
     "hostname": {"type": "string"},
     "mounts": {"type": "array"},
     "rancher": {"$ref": "#/definitions/rancher_config"},
@@ -33,7 +36,7 @@
         "disable": {"$ref": "#/definitions/list_of_strings"},
         "services_include": {"type": "object"},
         "modules": {"$ref": "#/definitions/list_of_strings"},
-        "network": {"type": "object"},
+        "network": {"$ref": "#/definitions/network_config"},
         "default_network": {"type": "object"},
         "repositories": {"type": "object"},
         "ssh": {"$ref": "#/definitions/ssh_config"},
@@ -45,6 +48,36 @@
         "defaults": {"$ref": "#/definitions/defaults_config"},
         "resize_device": {"type": "string"},
         "sysctl": {"type": "object"}
+      }
+    },
+
+    "file_config": {
+      "id": "#/definitions/file_config",
+      "type": "object",
+      "additionalProperties": false,
+
+      "properties": {
+        "encoding": {"type": "string"},
+        "content": {"type": "string"},
+        "owner": {"type": "string"},
+        "path": {"type": "string"},
+        "permissions": {"type": "string"}
+      }
+    },
+
+    "network_config": {
+      "id": "#/definitions/network_config",
+      "type": "object",
+      "additionalProperties": false,
+
+      "properties": {
+        "pre_cmds": {"$ref": "list_of_strings"},
+        "dns": {"$ref": "dns_config"},
+        "interfaces": {"type": "object"},
+        "post_cmds": {"$ref": "list_of_strings"},
+        "http_proxy": {"type": "string"},
+        "https_proxy": {"type": "string"},
+        "no_proxy": {"type": "string"}
       }
     },
 
@@ -129,7 +162,7 @@
       "properties": {
         "hostname": {"type": "string"},
         "docker": {"type": "object"},
-        "network": {"type": "object"}
+        "network": {"$ref": "#/definitions/network_config"}
       }
     },
 
