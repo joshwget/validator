@@ -4,7 +4,7 @@
 
   "properties": {
     "ssh_authorized_keys": {"$ref": "#/definitions/list_of_strings"},
-    "write_file": {"type": "array"},
+    "write_files": {"type": "array"},
     "hostname": {"type": "string"},
     "mounts": {"type": "array"},
     "rancher": {"$ref": "#/definitions/rancher_config"},
