@@ -71,10 +71,10 @@
       "additionalProperties": false,
 
       "properties": {
-        "pre_cmds": {"$ref": "list_of_strings"},
-        "dns": {"$ref": "dns_config"},
+        "pre_cmds": {"$ref": "#/definitions/list_of_strings"},
+        "dns": {"type": "object"},
         "interfaces": {"type": "object"},
-        "post_cmds": {"$ref": "list_of_strings"},
+        "post_cmds": {"$ref": "#/definitions/list_of_strings"},
         "http_proxy": {"type": "string"},
         "https_proxy": {"type": "string"},
         "no_proxy": {"type": "string"}
