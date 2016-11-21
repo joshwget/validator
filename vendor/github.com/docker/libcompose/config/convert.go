@@ -1,9 +1,6 @@
 package config
 
-import (
-	"github.com/docker/libcompose/utils"
-	"github.com/docker/libcompose/yaml"
-)
+import "github.com/docker/libcompose/utils"
 
 // ConvertServices converts a set of v1 service configs to v2 service configs
 func ConvertServices(v1Services map[string]*ServiceConfigV1) (map[string]*ServiceConfig, error) {
@@ -12,7 +9,7 @@ func ConvertServices(v1Services map[string]*ServiceConfigV1) (map[string]*Servic
 
 	for name, service := range v1Services {
 		replacementFields[name] = &ServiceConfig{
-			Build: yaml.Build{
+			Build: Build{
 				Context:    service.Build,
 				Dockerfile: service.Dockerfile,
 			},

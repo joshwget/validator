@@ -7,18 +7,6 @@ A Go library for Docker Compose. It does everything the command-line tool does, 
 
 **Note: This is experimental and not intended to replace the [Docker Compose](https://github.com/docker/compose) command-line tool. If you're looking to use Compose, head over to the [Compose installation instructions](http://docs.docker.com/compose/install/) to get started with it.**
 
-Here is a list of known project that uses `libcompose`:
-
-- [rancher-compose](https://github.com/rancher/rancher-compose) and [rancher os](https://github.com/rancher/os) (by [Rancher](https://github.com/rancher))
-- [openshift](https://github.com/openshift/origin) (by [Red Hat](https://github.com/openshift))
-- [henge](https://github.com/redhat-developer/henge) (by [Red Hat](https://github.com/redhat-developer))
-- [kompose](https://github.com/skippbox/kompose2) (by [skippbox](https://github.com/skippbox))
-- [compose2kube](https://github.com/kelseyhightower/compose2kube) (by [kelseyhightower](https://github.com/kelseyhightower))
-- [amazon-ecs-cli](https://github.com/aws/amazon-ecs-cli) (by [Amazon AWS](https://github.com/aws))
-- [libkermit](https://github.com/libkermit/docker) (by [vdemeester](https://github.com/vdemeester))
-
-## Usage
-
 ```go
 package main
 
@@ -51,7 +39,6 @@ func main() {
 	}
 }
 ```
-
 
 ## Building
 
@@ -145,6 +132,4 @@ The project is still being kickstarted... But it does a lot.  Please try it out 
 
 ## Contributing
 
-Want to hack on libcompose? [Docker's contributions guidelines](https://github.com/docker/libcompose/blob/master/CONTRIBUTING.md) apply.
-
-If you have comments, questions, or want to use your knowledge to help other, come join the conversation on IRC. You can reach us at #libcompose on Freenode.
+Want to hack on libcompose? [Docker's contributions guidelines](https://github.com/docker/docker/blob/master/CONTRIBUTING.md) apply.

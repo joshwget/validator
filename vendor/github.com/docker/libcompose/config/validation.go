@@ -188,7 +188,7 @@ func invalidTypeMessage(service, key string, err gojsonschema.ResultError) strin
 	return fmt.Sprintf("Service '%s' configuration key '%s' contains an invalid type, it should be %s.", service, key, validTypesMsg)
 }
 
-func Validate(serviceMap RawServiceMap) error {
+func validate(serviceMap RawServiceMap) error {
 	if err := setupSchemaLoaders(); err != nil {
 		return err
 	}

@@ -5,8 +5,8 @@ import (
 	"path"
 
 	"github.com/Sirupsen/logrus"
+	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/docker/libcompose/utils"
-	"gopkg.in/yaml.v2"
 )
 
 // MergeServicesV2 merges a v2 compose file into an existing set of service configs
@@ -186,14 +186,7 @@ func resolveContextV2(inFile string, serviceData RawService) RawService {
 	if _, ok := serviceData["build"]; !ok {
 		return serviceData
 	}
-	var build map[interface{}]interface{}
-	if buildAsString, ok := serviceData["build"].(string); ok {
-		build = map[interface{}]interface{}{
-			"context": buildAsString,
-		}
-	} else {
-		build = serviceData["build"].(map[interface{}]interface{})
-	}
+	build := serviceData["build"].(map[interface{}]interface{})
 	context := asString(build["context"])
 	if context == "" {
 		return serviceData

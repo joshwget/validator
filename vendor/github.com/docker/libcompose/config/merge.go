@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/docker/docker/pkg/urlutil"
-	"github.com/docker/libcompose/utils"
-	composeYaml "github.com/docker/libcompose/yaml"
-	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -24,14 +22,14 @@ var (
 )
 
 // Merge merges a compose file into an existing set of service configs
-func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte, options *ParseOptions) (string, map[string]*ServiceConfig, map[string]*VolumeConfig, map[string]*NetworkConfig, error) {
+func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte, options *ParseOptions) (map[string]*ServiceConfig, map[string]*VolumeConfig, map[string]*NetworkConfig, error) {
 	if options == nil {
 		options = &defaultParseOptions
 	}
 
 	var config Config
 	if err := yaml.Unmarshal(bytes, &config); err != nil {
-		return "", nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	var serviceConfigs map[string]*ServiceConfig
@@ -41,24 +39,24 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 		var err error
 		serviceConfigs, err = MergeServicesV2(existingServices, environmentLookup, resourceLookup, file, bytes, options)
 		if err != nil {
-			return "", nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 		volumeConfigs, err = ParseVolumes(bytes)
 		if err != nil {
-			return "", nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 		networkConfigs, err = ParseNetworks(bytes)
 		if err != nil {
-			return "", nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 	} else {
 		serviceConfigsV1, err := MergeServicesV1(existingServices, environmentLookup, resourceLookup, file, bytes, options)
 		if err != nil {
-			return "", nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 		serviceConfigs, err = ConvertServices(serviceConfigsV1)
 		if err != nil {
-			return "", nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
 
@@ -68,11 +66,11 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 		var err error
 		serviceConfigs, err = options.Postprocess(serviceConfigs)
 		if err != nil {
-			return "", nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
 
-	return config.Version, serviceConfigs, volumeConfigs, networkConfigs, nil
+	return serviceConfigs, volumeConfigs, networkConfigs, nil
 }
 
 func adjustValues(configs map[string]*ServiceConfig) {
@@ -88,13 +86,7 @@ func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData RawSe
 	if _, ok := serviceData["env_file"]; !ok {
 		return serviceData, nil
 	}
-
-	var envFiles composeYaml.Stringorslice
-
-	if err := utils.Convert(serviceData["env_file"], &envFiles); err != nil {
-		return nil, err
-	}
-
+	envFiles := serviceData["env_file"].([]interface{})
 	if len(envFiles) == 0 {
 		return serviceData, nil
 	}
@@ -103,16 +95,13 @@ func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData RawSe
 		return nil, fmt.Errorf("Can not use env_file in file %s no mechanism provided to load files", inFile)
 	}
 
-	var vars composeYaml.MaporEqualSlice
-
+	var vars []interface{}
 	if _, ok := serviceData["environment"]; ok {
-		if err := utils.Convert(serviceData["environment"], &vars); err != nil {
-			return nil, err
-		}
+		vars = serviceData["environment"].([]interface{})
 	}
 
 	for i := len(envFiles) - 1; i >= 0; i-- {
-		envFile := envFiles[i]
+		envFile := envFiles[i].(string)
 		content, _, err := resourceLookup.Lookup(envFile, inFile)
 		if err != nil {
 			return nil, err
@@ -125,21 +114,18 @@ func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData RawSe
 		scanner := bufio.NewScanner(bytes.NewBuffer(content))
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
+			key := strings.SplitAfter(line, "=")[0]
 
-			if len(line) > 0 && !strings.HasPrefix(line, "#") {
-				key := strings.SplitAfter(line, "=")[0]
-
-				found := false
-				for _, v := range vars {
-					if strings.HasPrefix(v, key) {
-						found = true
-						break
-					}
+			found := false
+			for _, v := range vars {
+				if strings.HasPrefix(v.(string), key) {
+					found = true
+					break
 				}
+			}
 
-				if !found {
-					vars = append(vars, line)
-				}
+			if !found {
+				vars = append(vars, line)
 			}
 		}
 

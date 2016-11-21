@@ -1,0 +1,346 @@
+rancher:
+  environment:
+    VERSION: {{.VERSION}}
+    SUFFIX: {{.SUFFIX}}
+  defaults:
+    hostname: {{.HOSTNAME_DEFAULT}}
+    {{if eq "amd64" .ARCH -}}
+    docker:
+      engine: docker-1.12.3
+    {{else -}}
+    docker:
+      engine: docker-1.11.2
+    {{end -}}
+    network:
+      dns:
+        nameservers: [8.8.8.8, 8.8.4.4]
+  bootstrap:
+    bootstrap:
+      image: {{.OS_REPO}}/os-bootstrap:{{.VERSION}}{{.SUFFIX}}
+      command: ros bootstrap
+      labels:
+        io.rancher.os.detach: "false"
+        io.rancher.os.scope: system
+      log_driver: json-file
+      net: none
+      privileged: true
+      volumes:
+      - /dev:/host/dev
+      - /lib/modules:/lib/modules
+      - /lib/firmware:/lib/firmware
+      - /usr/bin/ros:/usr/bin/ros:ro
+      - /usr/share/ros:/usr/share/ros:ro
+  cloud_init_services:
+    cloud-init:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: cloud-init-save
+      labels:
+        io.rancher.os.detach: "false"
+        io.rancher.os.scope: system
+        io.rancher.os.after: ntp
+      log_driver: json-file
+      net: host
+      uts: host
+      pid: host
+      ipc: host
+      privileged: true
+      volumes:
+      - /dev:/host/dev
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt.rancher
+      - /lib/modules:/lib/modules
+      - /lib/firmware:/lib/firmware
+      - /usr/bin/ros:/usr/bin/ros:ro
+      - /usr/bin/ros:/usr/bin/cloud-init-save
+      - /usr/share/ros:/usr/share/ros:ro
+      - /var/lib/rancher:/var/lib/rancher
+      - /var/lib/rancher/conf:/var/lib/rancher/conf
+  bootstrap_docker:
+    bridge: none
+    storage_driver: overlay
+    restart: false
+    graph: /var/lib/system-docker
+    group: root
+    host: ["unix:///var/run/system-docker.sock"]
+    userland_proxy: false
+  console: default
+  cloud_init:
+    datasources:
+    - configdrive:/media/config-2
+  repositories:
+    core:
+      url: {{.OS_SERVICES_REPO}}/{{.REPO_VERSION}}
+  state:
+    fstype: auto
+    oem_fstype: auto
+    oem_dev: LABEL=RANCHER_OEM
+  sysctl:
+    fs.file-max: 1000000000
+  services:
+    {{if eq "amd64" .ARCH -}}
+    acpid:
+      image: {{.OS_REPO}}/os-acpid:{{.VERSION}}{{.SUFFIX}}
+      command: /usr/sbin/acpid -f
+      labels:
+        io.rancher.os.scope: system
+      net: host
+      uts: host
+      privileged: true
+      volumes_from:
+      - command-volumes
+      - system-volumes
+    {{end -}}
+    all-volumes:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: echo
+      labels:
+        io.rancher.os.createonly: "true"
+        io.rancher.os.scope: system
+      log_driver: json-file
+      net: none
+      privileged: true
+      read_only: true
+      volumes_from:
+      - container-data-volumes
+      - command-volumes
+      - user-volumes
+      - system-volumes
+    cloud-init-execute:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: cloud-init-execute -pre-console
+      labels:
+        io.rancher.os.detach: "false"
+        io.rancher.os.scope: system
+        io.rancher.os.after: ntp
+      net: host
+      uts: host
+      privileged: true
+      volumes_from:
+      - command-volumes
+      - system-volumes
+    command-volumes:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: echo
+      labels:
+        io.rancher.os.createonly: "true"
+        io.rancher.os.scope: system
+      log_driver: json-file
+      net: none
+      privileged: true
+      read_only: true
+      volumes:
+      - /usr/bin/ros:/usr/bin/dockerlaunch:ro
+      - /usr/bin/ros:/usr/bin/system-docker:ro
+      - /usr/bin/ros:/sbin/poweroff:ro
+      - /usr/bin/ros:/sbin/reboot:ro
+      - /usr/bin/ros:/sbin/halt:ro
+      - /usr/bin/ros:/sbin/shutdown:ro
+      - /usr/bin/ros:/usr/bin/respawn:ro
+      - /usr/bin/ros:/usr/bin/ros:ro
+      - /usr/bin/ros:/usr/bin/cloud-init-execute:ro
+      - /usr/bin/ros:/usr/bin/cloud-init-save:ro
+      - /usr/bin/ros:/usr/sbin/netconf:ro
+      - /usr/bin/ros:/usr/sbin/wait-for-docker:ro
+    console:
+      image: {{.OS_REPO}}/os-console:{{.VERSION}}{{.SUFFIX}}
+      command: ros console-init
+      labels:
+        io.rancher.os.scope: system
+        io.rancher.os.after: cloud-init-execute
+        io.docker.compose.rebuild: always
+        io.rancher.os.console: default
+      net: host
+      uts: host
+      pid: host
+      ipc: host
+      privileged: true
+      restart: always
+      volumes_from:
+      - all-volumes
+      volumes:
+      - /usr/bin/iptables:/sbin/iptables:ro
+      - /media:/media:shared
+      - /mnt:/mnt:shared
+    container-data-volumes:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: echo
+      labels:
+        io.rancher.os.createonly: "true"
+        io.rancher.os.scope: system
+      log_driver: json-file
+      net: none
+      privileged: true
+      read_only: true
+      volumes:
+      - /var/lib/docker:/var/lib/docker
+    network:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: netconf
+      labels:
+        io.rancher.os.scope: system
+        io.rancher.os.after: udev
+        io.rancher.os.reloadconfig: "true"
+      net: host
+      uts: host
+      pid: host
+      privileged: true
+      volumes_from:
+      - command-volumes
+      - system-volumes
+    ntp:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: ntpd --nofork -g
+      labels:
+        io.rancher.os.scope: system
+        io.rancher.os.after: network
+      net: host
+      uts: host
+      privileged: true
+      restart: always
+      volumes_from:
+      - command-volumes
+      - system-volumes
+    preload-user-images:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: ros preload-images
+      labels:
+        io.rancher.os.detach: "false"
+        io.rancher.os.scope: system
+        io.rancher.os.after: console
+      privileged: true
+      volumes_from:
+      - command-volumes
+      - system-volumes
+    syslog:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: rsyslogd -n
+      labels:
+        io.rancher.os.scope: system
+      log_driver: json-file
+      net: host
+      uts: host
+      privileged: true
+      restart: always
+      volumes_from:
+      - command-volumes
+      - system-volumes
+    system-volumes:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: echo
+      labels:
+        io.rancher.os.createonly: "true"
+        io.rancher.os.scope: system
+      log_driver: json-file
+      net: none
+      privileged: true
+      read_only: true
+      volumes:
+      - /dev:/host/dev
+      - /etc/docker:/etc/docker
+      - /etc/hosts:/etc/hosts
+      - /etc/resolv.conf:/etc/resolv.conf
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt.rancher
+      - /etc/selinux:/etc/selinux
+      - /lib/firmware:/lib/firmware
+      - /lib/modules:/lib/modules
+      - /run:/run
+      - /usr/share/ros:/usr/share/ros
+      - /var/lib/rancher/cache:/var/lib/rancher/cache
+      - /var/lib/rancher/conf:/var/lib/rancher/conf
+      - /var/lib/rancher:/var/lib/rancher
+      - /var/log:/var/log
+      - /var/run:/var/run
+    udev-cold:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: ros udev-settle
+      labels:
+        io.rancher.os.detach: "false"
+        io.rancher.os.scope: system
+      net: host
+      uts: host
+      privileged: true
+      volumes_from:
+      - command-volumes
+      - system-volumes
+    udev:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: udevd
+      labels:
+        io.rancher.os.detach: "true"
+        io.rancher.os.scope: system
+        io.rancher.os.after: udev-cold
+      net: host
+      uts: host
+      privileged: true
+      restart: always
+      volumes_from:
+      - command-volumes
+      - system-volumes
+    user-volumes:
+      image: {{.OS_REPO}}/os-base:{{.VERSION}}{{.SUFFIX}}
+      command: echo
+      labels:
+        io.rancher.os.createonly: "true"
+        io.rancher.os.scope: system
+      log_driver: json-file
+      net: none
+      privileged: true
+      read_only: true
+      volumes:
+      - /home:/home
+      - /opt:/opt
+    docker:
+      {{if eq "amd64" .ARCH -}}
+      image: {{.OS_REPO}}/os-docker:1.12.3{{.SUFFIX}}
+      {{else -}}
+      image: {{.OS_REPO}}/os-docker:1.11.2{{.SUFFIX}}
+      {{end -}}
+      command: ros user-docker
+      environment:
+      - HTTP_PROXY
+      - HTTPS_PROXY
+      - NO_PROXY
+      labels:
+        io.rancher.os.scope: system
+        io.rancher.os.after: console
+      net: host
+      pid: host
+      ipc: host
+      uts: host
+      privileged: true
+      restart: always
+      volumes_from:
+      - all-volumes
+      volumes:
+      - /sys:/host/sys
+      - /var/lib/system-docker:/var/lib/system-docker:shared
+  system_docker:
+    exec: true
+    storage_driver: overlay
+    restart: false
+    graph: /var/lib/system-docker
+    group: root
+    host: ["unix:///var/run/system-docker.sock"]
+    pid_file: /var/run/system-docker.pid
+    exec_root: /var/run/system-docker
+    config_file: /etc/docker/system-docker.json
+    userland_proxy: false
+    log_opts:
+      max-size: 25m
+      max-file: 2
+  upgrade:
+    url: {{.OS_RELEASES_YML}}/releases{{.SUFFIX}}.yml
+    image: {{.OS_REPO}}/os
+  docker:
+    {{if eq "amd64" .ARCH -}}
+    engine: docker-1.12.3
+    {{else -}}
+    engine: docker-1.11.2
+    {{end -}}
+    storage_driver: overlay
+    group: docker
+    host: ["unix:///var/run/docker.sock"]
+    log_opts:
+      max-size: 25m
+      max-file: 2
+    tls_args: [--tlsverify, --tlscacert=/etc/docker/tls/ca.pem, --tlscert=/etc/docker/tls/server-cert.pem, --tlskey=/etc/docker/tls/server-key.pem,
+      '-H=0.0.0.0:2376']

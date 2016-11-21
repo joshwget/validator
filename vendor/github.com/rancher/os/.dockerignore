@@ -1,0 +1,17 @@
+.DS_Store
+.idea
+.trash-cache
+bin
+state
+build
+images/*/build
+scripts/images/*/dist/
+dist
+tests/integration/.venv*
+tests/integration/.tox
+*/*/*/*.pyc
+*/*/*/__pycache__
+.trash-cache
+.dapper
+vendor/*/*/*/.git
+tmp

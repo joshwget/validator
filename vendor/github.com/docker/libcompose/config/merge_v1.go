@@ -5,8 +5,8 @@ import (
 	"path"
 
 	"github.com/Sirupsen/logrus"
+	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/docker/libcompose/utils"
-	"gopkg.in/yaml.v2"
 )
 
 // MergeServicesV1 merges a v1 compose file into an existing set of service configs
@@ -31,7 +31,7 @@ func MergeServicesV1(existingServices *ServiceConfigs, environmentLookup Environ
 	}
 
 	if options.Validate {
-		if err := Validate(datas); err != nil {
+		if err := validate(datas); err != nil {
 			return nil, err
 		}
 	}
@@ -137,7 +137,7 @@ func parseV1(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup,
 		}
 
 		if options.Validate {
-			if err := Validate(baseRawServices); err != nil {
+			if err := validate(baseRawServices); err != nil {
 				return nil, err
 			}
 		}

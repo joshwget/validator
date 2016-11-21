@@ -1,5 +1,5 @@
 # This file describes the standard way to build libcompose, using docker
-FROM golang:1.6.3
+FROM golang:1.6.2
 
 
 # virtualenv is necessary to run acceptance tests
@@ -39,7 +39,7 @@ WORKDIR /go/src/github.com/docker/libcompose
 
 # Compose COMMIT for acceptance test version, update that commit when
 # you want to update the acceptance test version to support.
-ENV COMPOSE_COMMIT 1.8.0-rc2
+ENV COMPOSE_COMMIT e2cb7b0237085415ce48900309a61c73b5938520
 RUN virtualenv venv && \
     git clone https://github.com/docker/compose.git venv/compose && \
     cd venv/compose && \
@@ -50,14 +50,6 @@ RUN virtualenv venv && \
 
 ENV COMPOSE_BINARY /go/src/github.com/docker/libcompose/libcompose-cli
 ENV USER root
-
-# Compile Go for cross compilation
-# FIXME(vdemeester) This is mainly for the vendor script, should be shared somewhere else
-ENV DOCKER_CROSSPLATFORMS \
-	linux/386 linux/arm \
-	darwin/amd64 darwin/386 \
-	freebsd/amd64 freebsd/386 freebsd/arm \
-	windows/amd64 windows/386
 
 # Wrap all commands in the "docker-in-docker" script to allow nested containers
 ENTRYPOINT ["script/dind"]
